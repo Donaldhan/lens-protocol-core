@@ -30,7 +30,7 @@ abstract contract ERC721Time is Context, ERC165, IERC721Time, IERC721Metadata {
     // Token symbol
     string private _symbol;
 
-    // Mapping from token ID to token Data (owner address and mint timestamp uint96), this
+    // Mapping from token ID to token Data (owner address and mint timestamp uint96), this token信息数据
     // replaces the original mapping(uint256 => address) private _owners;
     mapping(uint256 => IERC721Time.TokenData) private _tokenData;
 
@@ -88,10 +88,11 @@ abstract contract ERC721Time is Context, ERC165, IERC721Time, IERC721Metadata {
     }
 
     /**
-     * @dev See {IERC721Time-mintTimestampOf}
+     * @dev See {IERC721Time-mintTimestampOf} 挖取
      */
     function mintTimestampOf(uint256 tokenId) public view virtual override returns (uint256) {
         uint96 mintTimestamp = _tokenData[tokenId].mintTimestamp;
+        //确保没有挖取
         require(mintTimestamp != 0, 'ERC721: mint timestamp query for nonexistent token');
         return mintTimestamp;
     }
@@ -338,7 +339,7 @@ abstract contract ERC721Time is Context, ERC165, IERC721Time, IERC721Metadata {
      * @dev Mints `tokenId` and transfers it to `to`.
      *
      * WARNING: Usage of this method is discouraged, use {_safeMint} whenever possible
-     *
+     * 挖取操作
      * Requirements:
      *
      * - `tokenId` must not exist.

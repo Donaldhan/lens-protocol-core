@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+ // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -7,14 +7,14 @@ import '@openzeppelin/contracts/token/ERC721/IERC721.sol';
 /**
  * @title IERC721Time
  * @author Lens Protocol
- *
+ * 基于时间线的ERC721 
  * @notice This is an expansion of the IERC721 interface that includes a struct for token data,
  * which contains the token owner and the mint timestamp as well as associated getters.
  */
 interface IERC721Time is IERC721 {
     /**
      * @notice Contains the owner address and the mint timestamp for every NFT.
-     *
+     * 拥有mint取时间戳的NFT
      * Note: Instead of the owner address in the _tokenOwners private mapping, we now store it in the
      * _tokenData mapping, alongside the unchanging mintTimestamp.
      *

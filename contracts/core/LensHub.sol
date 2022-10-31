@@ -32,11 +32,12 @@ import {IERC721Enumerable} from '@openzeppelin/contracts/token/ERC721/extensions
 contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHubStorage, ILensHub {
     uint256 internal constant REVISION = 1;
 
-    address internal immutable FOLLOW_NFT_IMPL;
-    address internal immutable COLLECT_NFT_IMPL;
+    address internal immutable FOLLOW_NFT_IMPL; //follow 实现
+    address internal immutable COLLECT_NFT_IMPL;//collect实现
 
     /**
      * @dev This modifier reverts if the caller is not the configured governance address.
+     * 仅治理服务可以调用
      */
     modifier onlyGov() {
         _validateCallerIsGovernance();
@@ -45,7 +46,7 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
 
     /**
      * @dev The constructor sets the immutable follow & collect NFT implementations.
-     *
+     * 构造len协议
      * @param followNFTImpl The follow NFT implementation address.
      * @param collectNFTImpl The collect NFT implementation address.
      */
@@ -56,13 +57,14 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
         COLLECT_NFT_IMPL = collectNFTImpl;
     }
 
-    /// @inheritdoc ILensHub
+    /// @inheritdoc ILensHub 初始化 
     function initialize(
         string calldata name,
         string calldata symbol,
         address newGovernance
     ) external override initializer {
         super._initialize(name, symbol);
+        //默认暂停
         _setState(DataTypes.ProtocolState.Paused);
         _setGovernance(newGovernance);
     }
@@ -71,12 +73,13 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
     /// *****GOV FUNCTIONS*****
     /// ***********************
 
-    /// @inheritdoc ILensHub
+    /// @inheritdoc ILensHub   设置治理服务
     function setGovernance(address newGovernance) external override onlyGov {
         _setGovernance(newGovernance);
     }
 
     /// @inheritdoc ILensHub
+    /// 设置紧急管理员
     function setEmergencyAdmin(address newEmergencyAdmin) external override onlyGov {
         address prevEmergencyAdmin = _emergencyAdmin;
         _emergencyAdmin = newEmergencyAdmin;
@@ -88,9 +91,10 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
         );
     }
 
-    /// @inheritdoc ILensHub
+    /// @inheritdoc ILensHub 设置协议状态
     function setState(DataTypes.ProtocolState newState) external override {
         if (msg.sender == _emergencyAdmin) {
+            //紧急管理员不能恢复
             if (newState == DataTypes.ProtocolState.Unpaused)
                 revert Errors.EmergencyAdminCannotUnpause();
             _validateNotPaused();
@@ -100,7 +104,7 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
         _setState(newState);
     }
 
-    ///@inheritdoc ILensHub
+    ///@inheritdoc ILensHub 设置profile白名单
     function whitelistProfileCreator(address profileCreator, bool whitelist)
         external
         override
@@ -110,13 +114,13 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
         emit Events.ProfileCreatorWhitelisted(profileCreator, whitelist, block.timestamp);
     }
 
-    /// @inheritdoc ILensHub
+    /// @inheritdoc ILensHub  设置follow模块白名单
     function whitelistFollowModule(address followModule, bool whitelist) external override onlyGov {
         _followModuleWhitelisted[followModule] = whitelist;
         emit Events.FollowModuleWhitelisted(followModule, whitelist, block.timestamp);
     }
 
-    /// @inheritdoc ILensHub
+    /// @inheritdoc ILensHub 设置reference模块白名单
     function whitelistReferenceModule(address referenceModule, bool whitelist)
         external
         override
@@ -126,7 +130,7 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
         emit Events.ReferenceModuleWhitelisted(referenceModule, whitelist, block.timestamp);
     }
 
-    /// @inheritdoc ILensHub
+    /// @inheritdoc ILensHub 设置collect模块白名单
     function whitelistCollectModule(address collectModule, bool whitelist)
         external
         override
@@ -140,17 +144,20 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
     /// *****PROFILE OWNER FUNCTIONS*****
     /// *********************************
 
-    /// @inheritdoc ILensHub
+    /// @inheritdoc ILensHub 创建profile
     function createProfile(DataTypes.CreateProfileData calldata vars)
         external
         override
         whenNotPaused
         returns (uint256)
     {
+        //检查白名单
         if (!_profileCreatorWhitelisted[msg.sender]) revert Errors.ProfileCreatorNotWhitelisted();
         unchecked {
             uint256 profileId = ++_profileCounter;
+            //挖取NFT profile
             _mint(vars.to, profileId);
+            //创建Prolle
             PublishingLogic.createProfile(
                 vars,
                 profileId,
@@ -162,18 +169,19 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
         }
     }
 
-    /// @inheritdoc ILensHub
+    /// @inheritdoc ILensHub 设置给定profileId的默认属性
     function setDefaultProfile(uint256 profileId) external override whenNotPaused {
         _setDefaultProfile(msg.sender, profileId);
     }
 
-    /// @inheritdoc ILensHub
+    /// @inheritdoc ILensHub 设置给定profileId的默认映射set：签名版
     function setDefaultProfileWithSig(DataTypes.SetDefaultProfileWithSigData calldata vars)
         external
         override
         whenNotPaused
     {
         unchecked {
+            //验证签名
             _validateRecoveredAddress(
                 _calculateDigest(
                     keccak256(
@@ -189,17 +197,20 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
                 vars.wallet,
                 vars.sig
             );
+            //设置钱包的默认profileId
             _setDefaultProfile(vars.wallet, vars.profileId);
         }
     }
 
-    /// @inheritdoc ILensHub
+    /// @inheritdoc ILensHub 设置关注者的Follow模块
     function setFollowModule(
         uint256 profileId,
         address followModule,
         bytes calldata followModuleInitData
     ) external override whenNotPaused {
+        //验证调用者是否为profile本人
         _validateCallerIsProfileOwner(profileId);
+        //设置follow模块
         PublishingLogic.setFollowModule(
             profileId,
             followModule,
@@ -209,7 +220,7 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
         );
     }
 
-    /// @inheritdoc ILensHub
+    /// @inheritdoc ILensHub 设置关注者的Follow模块：签名版
     function setFollowModuleWithSig(DataTypes.SetFollowModuleWithSigData calldata vars)
         external
         override
@@ -217,6 +228,7 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
     {
         address owner = ownerOf(vars.profileId);
         unchecked {
+            //校验签名
             _validateRecoveredAddress(
                 _calculateDigest(
                     keccak256(
@@ -234,6 +246,7 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
                 vars.sig
             );
         }
+         //设置follow模块
         PublishingLogic.setFollowModule(
             vars.profileId,
             vars.followModule,
@@ -243,13 +256,15 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
         );
     }
 
-    /// @inheritdoc ILensHub
+    /// @inheritdoc ILensHub 设置profileId的分发者，分发者可以使用profile发布内容
     function setDispatcher(uint256 profileId, address dispatcher) external override whenNotPaused {
+        //验证调用者是否为profile本人
         _validateCallerIsProfileOwner(profileId);
+        // 设置profile分发者
         _setDispatcher(profileId, dispatcher);
     }
 
-    /// @inheritdoc ILensHub
+    /// @inheritdoc ILensHub 设置profileId的分发者，分发者可以使用profile发布内容：签名版
     function setDispatcherWithSig(DataTypes.SetDispatcherWithSigData calldata vars)
         external
         override
@@ -257,6 +272,7 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
     {
         address owner = ownerOf(vars.profileId);
         unchecked {
+            //签名验证
             _validateRecoveredAddress(
                 _calculateDigest(
                     keccak256(
@@ -273,10 +289,11 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
                 vars.sig
             );
         }
+        // 设置profile分发者
         _setDispatcher(vars.profileId, vars.dispatcher);
     }
 
-    /// @inheritdoc ILensHub
+    /// @inheritdoc ILensHub  设置profile的图片URI
     function setProfileImageURI(uint256 profileId, string calldata imageURI)
         external
         override
@@ -286,7 +303,7 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
         _setProfileImageURI(profileId, imageURI);
     }
 
-    /// @inheritdoc ILensHub
+    /// @inheritdoc ILensHub 设置profile的图片URI：签名版
     function setProfileImageURIWithSig(DataTypes.SetProfileImageURIWithSigData calldata vars)
         external
         override
@@ -310,10 +327,11 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
                 vars.sig
             );
         }
+        //
         _setProfileImageURI(vars.profileId, vars.imageURI);
     }
 
-    /// @inheritdoc ILensHub
+    /// @inheritdoc ILensHub 设置profile的followNFT URI
     function setFollowNFTURI(uint256 profileId, string calldata followNFTURI)
         external
         override
@@ -323,7 +341,7 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
         _setFollowNFTURI(profileId, followNFTURI);
     }
 
-    /// @inheritdoc ILensHub
+    /// @inheritdoc ILensHub  设置profile的followNFT URI：签名版
     function setFollowNFTURIWithSig(DataTypes.SetFollowNFTURIWithSigData calldata vars)
         external
         override
@@ -347,17 +365,20 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
                 vars.sig
             );
         }
+        //设置profile的follow NFT URI
         _setFollowNFTURI(vars.profileId, vars.followNFTURI);
     }
 
-    /// @inheritdoc ILensHub
+    /// @inheritdoc ILensHub 创建Publication 发布内容
     function post(DataTypes.PostData calldata vars)
         external
         override
         whenPublishingEnabled
         returns (uint256)
     {
+        //验证分发者和profile
         _validateCallerIsProfileOwnerOrDispatcher(vars.profileId);
+        //创建post
         return
             _createPost(
                 vars.profileId,
@@ -369,7 +390,7 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
             );
     }
 
-    /// @inheritdoc ILensHub
+    /// @inheritdoc ILensHub 发布内容：签名版
     function postWithSig(DataTypes.PostWithSigData calldata vars)
         external
         override
@@ -398,6 +419,7 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
                 vars.sig
             );
         }
+        //创建post
         return
             _createPost(
                 vars.profileId,
@@ -416,7 +438,9 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
         whenPublishingEnabled
         returns (uint256)
     {
+        //验证分发者和profile
         _validateCallerIsProfileOwnerOrDispatcher(vars.profileId);
+        //创建评论
         return _createComment(vars);
     }
 
@@ -452,6 +476,7 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
                 vars.sig
             );
         }
+        //创建评论
         return
             _createComment(
                 DataTypes.CommentData(
@@ -476,6 +501,7 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
         returns (uint256)
     {
         _validateCallerIsProfileOwnerOrDispatcher(vars.profileId);
+        //创建转发
         return _createMirror(vars);
     }
 
@@ -508,6 +534,7 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
                 vars.sig
             );
         }
+        //创建转发
         return
             _createMirror(
                 DataTypes.MirrorData(
@@ -524,7 +551,7 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
     /**
      * @notice Burns a profile, this maintains the profile data struct, but deletes the
      * handle hash to profile ID mapping value.
-     *
+     * 销毁
      * NOTE: This overrides the LensNFTBase contract's `burn()` function and calls it to fully burn
      * the NFT.
      */
@@ -536,7 +563,7 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
     /**
      * @notice Burns a profile with a signature, this maintains the profile data struct, but deletes the
      * handle hash to profile ID mapping value.
-     *
+     * 销毁：签名版
      * NOTE: This overrides the LensNFTBase contract's `burnWithSig()` function and calls it to fully burn
      * the NFT.
      */
@@ -560,6 +587,7 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
         whenNotPaused
         returns (uint256[] memory)
     {
+        //关注
         return
             InteractionLogic.follow(
                 msg.sender,
@@ -602,6 +630,7 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
                 vars.sig
             );
         }
+        //关注
         return
             InteractionLogic.follow(
                 vars.follower,
@@ -612,7 +641,7 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
             );
     }
 
-    /// @inheritdoc ILensHub
+    /// @inheritdoc ILensHub  Collects给定publication
     function collect(
         uint256 profileId,
         uint256 pubId,
@@ -630,7 +659,7 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
             );
     }
 
-    /// @inheritdoc ILensHub
+    /// @inheritdoc ILensHub Collects给定publication：：签名版
     function collectWithSig(DataTypes.CollectWithSigData calldata vars)
         external
         override
@@ -666,8 +695,8 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
                 _profileById
             );
     }
-
-    /// @inheritdoc ILensHub
+ 
+    /// @inheritdoc ILensHub 发射FollowNFT 转移事件
     function emitFollowNFTTransferEvent(
         uint256 profileId,
         uint256 followNFTId,
@@ -907,13 +936,13 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
     /// ****************************
     /// *****INTERNAL FUNCTIONS*****
     /// ****************************
-
+    ///设置治理服务地址
     function _setGovernance(address newGovernance) internal {
         address prevGovernance = _governance;
         _governance = newGovernance;
         emit Events.GovernanceSet(msg.sender, prevGovernance, newGovernance, block.timestamp);
     }
-
+    ///创建post
     function _createPost(
         uint256 profileId,
         string memory contentURI,
@@ -923,6 +952,7 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
         bytes memory referenceModuleData
     ) internal returns (uint256) {
         unchecked {
+            //更新pubId
             uint256 pubId = ++_profileById[profileId].pubCount;
             PublishingLogic.createPost(
                 profileId,
@@ -942,6 +972,7 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
 
     /*
      * If the profile ID is zero, this is the equivalent of "unsetting" a default profile.
+     * 设置钱包的默认profileId
      * Note that the wallet address should either be the message sender or validated via a signature
      * prior to this function call.
      */
@@ -952,7 +983,7 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
 
         emit Events.DefaultProfileSet(wallet, profileId, block.timestamp);
     }
-
+    ///创建评论
     function _createComment(DataTypes.CommentData memory vars) internal returns (uint256) {
         unchecked {
             uint256 pubId = ++_profileById[vars.profileId].pubCount;
@@ -967,7 +998,7 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
             return pubId;
         }
     }
-
+    ///创建转发
     function _createMirror(DataTypes.MirrorData memory vars) internal returns (uint256) {
         unchecked {
             uint256 pubId = ++_profileById[vars.profileId].pubCount;
@@ -980,24 +1011,24 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
             return pubId;
         }
     }
-
+    ///设置profile分发者
     function _setDispatcher(uint256 profileId, address dispatcher) internal {
         _dispatcherByProfile[profileId] = dispatcher;
         emit Events.DispatcherSet(profileId, dispatcher, block.timestamp);
     }
-
+    //设置profile 图片 
     function _setProfileImageURI(uint256 profileId, string calldata imageURI) internal {
         if (bytes(imageURI).length > Constants.MAX_PROFILE_IMAGE_URI_LENGTH)
             revert Errors.ProfileImageURILengthInvalid();
         _profileById[profileId].imageURI = imageURI;
         emit Events.ProfileImageURISet(profileId, imageURI, block.timestamp);
     }
-
+    ///设置profile的follow NFT URI
     function _setFollowNFTURI(uint256 profileId, string calldata followNFTURI) internal {
         _profileById[profileId].followNFTURI = followNFTURI;
         emit Events.FollowNFTURISet(profileId, followNFTURI, block.timestamp);
     }
-
+    ///清除profile 处理器 
     function _clearHandleHash(uint256 profileId) internal {
         bytes32 handleHash = keccak256(bytes(_profileById[profileId].handle));
         _profileIdByHandleHash[handleHash] = 0;
@@ -1018,18 +1049,18 @@ contract LensHub is LensNFTBase, VersionedInitializable, LensMultiState, LensHub
 
         super._beforeTokenTransfer(from, to, tokenId);
     }
-
+    ///验证分发者和profile
     function _validateCallerIsProfileOwnerOrDispatcher(uint256 profileId) internal view {
         if (msg.sender == ownerOf(profileId) || msg.sender == _dispatcherByProfile[profileId]) {
             return;
         }
         revert Errors.NotProfileOwnerOrDispatcher();
     }
-
+    //验证调用者是否为profile本人
     function _validateCallerIsProfileOwner(uint256 profileId) internal view {
         if (msg.sender != ownerOf(profileId)) revert Errors.NotProfileOwner();
     }
-
+    ///仅治理服务可以调用
     function _validateCallerIsGovernance() internal view {
         if (msg.sender != _governance) revert Errors.NotGovernance();
     }

@@ -13,17 +13,17 @@ import '@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol';
  * NOTE: Modified from Openzeppelin to inherit from a modified ERC721 contract.
  */
 abstract contract ERC721Enumerable is ERC721Time, IERC721Enumerable {
-    // Mapping from owner to list of owned token IDs
+    // Mapping from owner to list of owned token IDs   用户拥有的索引token
     mapping(address => mapping(uint256 => uint256)) private _ownedTokens;
 
-    // Mapping from token ID to index of the owner tokens list
+    // Mapping from token ID to index of the owner tokens list 用户拥有token索引
     mapping(uint256 => uint256) private _ownedTokensIndex;
 
-    // Array with all token ids, used for enumeration
+    // Array with all token ids, used for enumeration 所有token Id
     uint256[] private _allTokens;
 
-    // Mapping from token id to position in the allTokens array
-    mapping(uint256 => uint256) private _allTokensIndex;
+    // Mapping from token id to position in the allTokens array ；token array索引
+    mapping(uint256 => uint256) private _allTokensIndex; 
 
     /**
      * @dev See {IERC165-supportsInterface}.
@@ -62,7 +62,7 @@ abstract contract ERC721Enumerable is ERC721Time, IERC721Enumerable {
     }
 
     /**
-     * @dev See {IERC721Enumerable-tokenByIndex}.
+     * @dev See {IERC721Enumerable-tokenByIndex}. 根据索引获取token
      */
     function tokenByIndex(uint256 index) public view virtual override returns (uint256) {
         require(
@@ -107,7 +107,7 @@ abstract contract ERC721Enumerable is ERC721Time, IERC721Enumerable {
     }
 
     /**
-     * @dev Private function to add a token to this extension's ownership-tracking data structures.
+     * @dev Private function to add a token to this extension's ownership-tracking data structures. 添加token到拥有者
      * @param to address representing the new owner of the given token ID
      * @param tokenId uint256 ID of the token to be added to the tokens list of the given address
      */
@@ -118,7 +118,7 @@ abstract contract ERC721Enumerable is ERC721Time, IERC721Enumerable {
     }
 
     /**
-     * @dev Private function to add a token to this extension's token tracking data structures.
+     * @dev Private function to add a token to this extension's token tracking data structures. 添加token到所有token数组
      * @param tokenId uint256 ID of the token to be added to the tokens list
      */
     function _addTokenToAllTokensEnumeration(uint256 tokenId) private {
@@ -131,6 +131,7 @@ abstract contract ERC721Enumerable is ERC721Time, IERC721Enumerable {
      * while the token is not assigned a new owner, the `_ownedTokensIndex` mapping is _not_ updated: this allows for
      * gas optimizations e.g. when performing a transfer operation (avoiding double writes).
      * This has O(1) time complexity, but alters the order of the _ownedTokens array.
+     * 从拥有者移除tokenId
      * @param from address representing the previous owner of the given token ID
      * @param tokenId uint256 ID of the token to be removed from the tokens list of the given address
      */
@@ -142,6 +143,7 @@ abstract contract ERC721Enumerable is ERC721Time, IERC721Enumerable {
         uint256 tokenIndex = _ownedTokensIndex[tokenId];
 
         // When the token to delete is the last token, the swap operation is unnecessary
+        // 非最后一个，移动最后一个
         if (tokenIndex != lastTokenIndex) {
             uint256 lastTokenId = _ownedTokens[from][lastTokenIndex];
 
@@ -150,12 +152,14 @@ abstract contract ERC721Enumerable is ERC721Time, IERC721Enumerable {
         }
 
         // This also deletes the contents at the last position of the array
+        // 删除最后一个
         delete _ownedTokensIndex[tokenId];
         delete _ownedTokens[from][lastTokenIndex];
     }
 
     /**
      * @dev Private function to remove a token from this extension's token tracking data structures.
+     * 从所有token中移除
      * This has O(1) time complexity, but alters the order of the _allTokens array.
      * @param tokenId uint256 ID of the token to be removed from the tokens list
      */
