@@ -7,13 +7,13 @@ import {DataTypes} from '../libraries/DataTypes.sol';
 /**
  * @title IFollowNFT
  * @author Lens Protocol
- *
+ * IFollowNFT
  * @notice This is the interface for the FollowNFT contract, which is cloned upon the first follow for any profile.
  */
 interface IFollowNFT {
     /**
      * @notice Initializes the follow NFT, setting the hub as the privileged minter and storing the associated profile ID.
-     *
+     *初始化follow NFT， 设置hub为minter和存储关联profile Id
      * @param profileId The token ID of the profile in the hub associated with this followNFT, used for transfer hooks.
      */
     function initialize(uint256 profileId) external;
@@ -21,7 +21,7 @@ interface IFollowNFT {
     /**
      * @notice Mints a follow NFT to the specified address. This can only be called by the hub, and is called
      * upon follow.
-     *
+     * 挖取一个follow NFT， hub在follow动作下产生
      * @param to The address to mint the NFT to.
      *
      * @return uint256 An interger representing the minted token ID.
@@ -30,14 +30,14 @@ interface IFollowNFT {
 
     /**
      * @notice Delegates the caller's governance power to the given delegatee address.
-     *
+     * 委托代理操作
      * @param delegatee The delegatee address to delegate governance power to.
      */
     function delegate(address delegatee) external;
 
     /**
      * @notice Delegates the delegator's governance power via meta-tx to the given delegatee address.
-     *
+     * 签名委托代理操作
      * @param delegator The delegator address, who is the signer.
      * @param delegatee The delegatee address, who is receiving the governance power delegation.
      * @param sig The EIP712Signature struct containing the necessary parameters to recover the delegator's signature.
@@ -50,7 +50,7 @@ interface IFollowNFT {
 
     /**
      * @notice Returns the governance power for a given user at a specified block number.
-     *
+     * 获取用户给定区块的治理权重
      * @param user The user to query governance power for.
      * @param blockNumber The block number to query the user's governance power at.
      *
@@ -61,7 +61,7 @@ interface IFollowNFT {
     /**
      * @notice Returns the total delegated supply at a specified block number. This is the sum of all
      * current available voting power at a given block.
-     *
+     * 获取所有投票权重
      * @param blockNumber The block number to query the delegated supply at.
      *
      * @return uint256 The delegated supply at the given block number.

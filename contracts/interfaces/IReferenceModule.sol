@@ -11,6 +11,7 @@ pragma solidity 0.8.10;
 interface IReferenceModule {
     /**
      * @notice Initializes data for a given publication being published. This can only be called by the hub.
+     * 在publication发布时，初始化ReferenceModules模块，只能通过hub调用
      * @param profileId The token ID of the profile publishing the publication.
      * @param pubId The associated publication's LensHub publication ID.
      * @param data Arbitrary data passed from the user to be decoded.
@@ -26,7 +27,7 @@ interface IReferenceModule {
 
     /**
      * @notice Processes a comment action referencing a given publication. This can only be called by the hub.
-     *
+     * 处理评论
      * @param profileId The token ID of the profile associated with the publication being published.
      * @param profileIdPointed The profile ID of the profile associated the publication being referenced.
      * @param pubIdPointed The publication ID of the publication being referenced.
@@ -34,14 +35,14 @@ interface IReferenceModule {
      */
     function processComment(
         uint256 profileId,
-        uint256 profileIdPointed,
+        uint256 profileIdPointed,//publication 关联的profile的Id
         uint256 pubIdPointed,
         bytes calldata data
     ) external;
 
     /**
      * @notice Processes a mirror action referencing a given publication. This can only be called by the hub.
-     *
+     * 处理转发
      * @param profileId The token ID of the profile associated with the publication being published.
      * @param profileIdPointed The profile ID of the profile associated the publication being referenced.
      * @param pubIdPointed The publication ID of the publication being referenced.
@@ -49,7 +50,7 @@ interface IReferenceModule {
      */
     function processMirror(
         uint256 profileId,
-        uint256 profileIdPointed,
+        uint256 profileIdPointed,//publication 关联的profile的Id
         uint256 pubIdPointed,
         bytes calldata data
     ) external;

@@ -12,22 +12,26 @@ import {ERC721Enumerable} from './ERC721Enumerable.sol';
 /**
  * @title LensNFTBase
  * @author Lens Protocol
- *
+ * NFT base 合约
  * @notice This is an abstract base contract to be inherited by other Lens Protocol NFTs, it includes
  * the slightly modified ERC721Enumerable, which itself inherits from the ERC721Time-- which adds an
  * internal operator approval setter, stores the mint timestamp for each token, and replaces the
  * constructor with an initializer.
  */
 abstract contract LensNFTBase is ERC721Enumerable, ILensNFTBase {
-    bytes32 internal constant EIP712_REVISION_HASH = keccak256('1');
+    bytes32 internal constant EIP712_REVISION_HASH = keccak256('1');//版本
+    //授权类型
     bytes32 internal constant PERMIT_TYPEHASH =
         keccak256('Permit(address spender,uint256 tokenId,uint256 nonce,uint256 deadline)');
+        //授权all
     bytes32 internal constant PERMIT_FOR_ALL_TYPEHASH =
         keccak256(
             'PermitForAll(address owner,address operator,bool approved,uint256 nonce,uint256 deadline)'
         );
+        //销毁签名
     bytes32 internal constant BURN_WITH_SIG_TYPEHASH =
         keccak256('BurnWithSig(uint256 tokenId,uint256 nonce,uint256 deadline)');
+        //域名
     bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
         keccak256(
             'EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'
@@ -37,7 +41,7 @@ abstract contract LensNFTBase is ERC721Enumerable, ILensNFTBase {
 
     /**
      * @notice Initializer sets the name, symbol and the cached domain separator.
-     *
+     * 初始化
      * NOTE: Inheritor contracts *must* call this function to initialize the name & symbol in the
      * inherited ERC721 contract.
      *
@@ -58,6 +62,7 @@ abstract contract LensNFTBase is ERC721Enumerable, ILensNFTBase {
     ) external override {
         if (spender == address(0)) revert Errors.ZeroSpender();
         address owner = ownerOf(tokenId);
+        //验证签名
         unchecked {
             _validateRecoveredAddress(
                 _calculateDigest(
@@ -75,6 +80,7 @@ abstract contract LensNFTBase is ERC721Enumerable, ILensNFTBase {
                 sig
             );
         }
+        //授权
         _approve(spender, tokenId);
     }
 
@@ -86,6 +92,7 @@ abstract contract LensNFTBase is ERC721Enumerable, ILensNFTBase {
         DataTypes.EIP712Signature calldata sig
     ) external override {
         if (operator == address(0)) revert Errors.ZeroSpender();
+        //验证签名
         unchecked {
             _validateRecoveredAddress(
                 _calculateDigest(
@@ -104,6 +111,7 @@ abstract contract LensNFTBase is ERC721Enumerable, ILensNFTBase {
                 sig
             );
         }
+        //授权用户
         _setOperatorApproval(owner, operator, approved);
     }
 
@@ -112,13 +120,13 @@ abstract contract LensNFTBase is ERC721Enumerable, ILensNFTBase {
         return _calculateDomainSeparator();
     }
 
-    /// @inheritdoc ILensNFTBase
+    /// @inheritdoc ILensNFTBase 销毁
     function burn(uint256 tokenId) public virtual override {
         if (!_isApprovedOrOwner(msg.sender, tokenId)) revert Errors.NotOwnerOrApproved();
         _burn(tokenId);
     }
 
-    /// @inheritdoc ILensNFTBase
+    /// @inheritdoc ILensNFTBase 签名销毁
     function burnWithSig(uint256 tokenId, DataTypes.EIP712Signature calldata sig)
         public
         virtual
@@ -146,6 +154,7 @@ abstract contract LensNFTBase is ERC721Enumerable, ILensNFTBase {
 
     /**
      * @dev Wrapper for ecrecover to reduce code size, used in meta-tx specific functions.
+     * 验证地址
      */
     function _validateRecoveredAddress(
         bytes32 digest,
@@ -176,7 +185,7 @@ abstract contract LensNFTBase is ERC721Enumerable, ILensNFTBase {
 
     /**
      * @dev Calculates EIP712 digest based on the current DOMAIN_SEPARATOR.
-     *
+     * 计算签名
      * @param hashedMessage The message hash from which the digest should be calculated.
      *
      * @return bytes32 A 32-byte output representing the EIP712 digest.

@@ -13,7 +13,7 @@ interface ICollectNFT {
     /**
      * @notice Initializes the collect NFT, setting the feed as the privileged minter, storing the collected publication pointer
      * and initializing the name and symbol in the LensNFTBase contract.
-     *
+     * 初始化collect NFT操作， 设置feed
      * @param profileId The token ID of the profile in the hub that this collectNFT points to.
      * @param pubId The profile publication ID in the hub that this collectNFT points to.
      * @param name The name to set for this NFT.
@@ -29,7 +29,7 @@ interface ICollectNFT {
     /**
      * @notice Mints a collect NFT to the specified address. This can only be called by the hub, and is called
      * upon collection.
-     *
+     * 挖取collect NFT操作
      * @param to The address to mint the NFT to.
      *
      * @return uint256 An interger representing the minted token ID.
@@ -38,7 +38,7 @@ interface ICollectNFT {
 
     /**
      * @notice Returns the source publication pointer mapped to this collect NFT.
-     *
+     * 返回当前  collect NFT对应的源publication 
      * @return tuple First the profile ID uint256, and second the pubId uint256.
      */
     function getSourcePublicationPointer() external view returns (uint256, uint256);

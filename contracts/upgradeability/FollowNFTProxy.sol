@@ -8,13 +8,14 @@ import {Address} from '@openzeppelin/contracts/utils/Address.sol';
 
 contract FollowNFTProxy is Proxy {
     using Address for address;
-    address immutable HUB;
+    address immutable HUB; //Hub地址
 
     constructor(bytes memory data) {
         HUB = msg.sender;
+        //初始化FollowNFT functionDelegateCall？？？
         ILensHub(msg.sender).getFollowNFTImpl().functionDelegateCall(data);
     }
-
+    //实现
     function _implementation() internal view override returns (address) {
         return ILensHub(HUB).getFollowNFTImpl();
     }

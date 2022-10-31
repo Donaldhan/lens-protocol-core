@@ -193,7 +193,7 @@ library Events {
 
     /**
      * @dev Emitted when a "post" is published.
-     *
+     * post publication published 事件
      * @param profileId The profile's token ID.
      * @param pubId The new publication's ID.
      * @param contentURI The URI mapped to this new publication.

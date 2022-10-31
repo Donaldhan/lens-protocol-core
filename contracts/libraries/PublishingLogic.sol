@@ -16,25 +16,26 @@ import {IReferenceModule} from '../interfaces/IReferenceModule.sol';
  * @author Lens Protocol
  *
  * @notice This is the library that contains the logic for profile creation & publication.
- *
+ * profile creation & publication 创建的逻辑库
  * @dev The functions are external, so they are called from the hub via `delegateCall` under the hood. Furthermore,
  * expected events are emitted from this library instead of from the hub to alleviate code size concerns.
+ * 方法为external， 以便可以通过hub以 `delegateCall`调用。进一步说，期望的事件，将会emit，以减少hub关注代码量
  */
 library PublishingLogic {
     /**
      * @notice Executes the logic to create a profile with the given parameters to the given address.
-     *
+     * 以跟定的参数和地址，创建一个profile
      * @param vars The CreateProfileData struct containing the following parameters:
      *      to: The address receiving the profile.
-     *      handle: The handle to set for the profile, must be unique and non-empty.
-     *      imageURI: The URI to set for the profile image.
-     *      followModule: The follow module to use, can be the zero address.
-     *      followModuleInitData: The follow module initialization data, if any
-     *      followNFTURI: The URI to set for the follow NFT.
-     * @param profileId The profile ID to associate with this profile NFT (token ID).
-     * @param _profileIdByHandleHash The storage reference to the mapping of profile IDs by handle hash.
-     * @param _profileById The storage reference to the mapping of profile structs by IDs.
-     * @param _followModuleWhitelisted The storage reference to the mapping of whitelist status by follow module address.
+     *      handle: The handle to set for the profile, must be unique and non-empty. //profile handle set
+     *      imageURI: The URI to set for the profile image. // profile 图片URL
+     *      followModule: The follow module to use, can be the zero address. follow模块
+     *      followModuleInitData: The follow module initialization data, if any  follow模块初始化数据
+     *      followNFTURI: The URI to set for the follow NFT. //follow NFT URL
+     * @param profileId The profile ID to associate with this profile NFT (token ID). profile NFT Id
+     * @param _profileIdByHandleHash The storage reference to the mapping of profile IDs by handle hash.   profile IDs hadle hash
+     * @param _profileById The storage reference to the mapping of profile structs by IDs. 
+     * @param _followModuleWhitelisted The storage reference to the mapping of whitelist status by follow module address.  follow的白名单
      */
     function createProfile(
         DataTypes.CreateProfileData calldata vars,
@@ -43,15 +44,16 @@ library PublishingLogic {
         mapping(uint256 => DataTypes.ProfileStruct) storage _profileById,
         mapping(address => bool) storage _followModuleWhitelisted
     ) external {
+        //校验处理器
         _validateHandle(vars.handle);
-
+        //检查图片大小
         if (bytes(vars.imageURI).length > Constants.MAX_PROFILE_IMAGE_URI_LENGTH)
             revert Errors.ProfileImageURILengthInvalid();
 
         bytes32 handleHash = keccak256(bytes(vars.handle));
-
+        //确保profile处理器hash不存在
         if (_profileIdByHandleHash[handleHash] != 0) revert Errors.HandleTaken();
-
+        // 初始化profile数据DataTypes.ProfileStruct
         _profileIdByHandleHash[handleHash] = profileId;
         _profileById[profileId].handle = vars.handle;
         _profileById[profileId].imageURI = vars.imageURI;
@@ -60,6 +62,7 @@ library PublishingLogic {
         bytes memory followModuleReturnData;
         if (vars.followModule != address(0)) {
             _profileById[profileId].followModule = vars.followModule;
+            //初始化follow 模块
             followModuleReturnData = _initFollowModule(
                 profileId,
                 vars.followModule,
@@ -67,13 +70,13 @@ library PublishingLogic {
                 _followModuleWhitelisted
             );
         }
-
+        //创建Profile事件
         _emitProfileCreated(profileId, vars, followModuleReturnData);
     }
 
     /**
      * @notice Sets the follow module for a given profile.
-     *
+     * 设置follow模块
      * @param profileId The profile ID to set the follow module for.
      * @param followModule The follow module to set for the given profile, if any.
      * @param followModuleInitData The data to pass to the follow module for profile initialization.
@@ -87,12 +90,13 @@ library PublishingLogic {
         DataTypes.ProfileStruct storage _profile,
         mapping(address => bool) storage _followModuleWhitelisted
     ) external {
-        if (followModule != _profile.followModule) {
+        if (followModule != _profile.followModule) {//确保模块变更
             _profile.followModule = followModule;
         }
 
         bytes memory followModuleReturnData;
         if (followModule != address(0))
+             //初始化follow 模块
             followModuleReturnData = _initFollowModule(
                 profileId,
                 followModule,
@@ -109,7 +113,7 @@ library PublishingLogic {
 
     /**
      * @notice Creates a post publication mapped to the given profile.
-     *
+     * 创建publication
      * @dev To avoid a stack too deep error, reference parameters are passed in memory rather than calldata.
      *
      * @param profileId The profile ID to associate this publication to.
@@ -138,7 +142,7 @@ library PublishingLogic {
     ) external {
         _pubByIdByProfile[profileId][pubId].contentURI = contentURI;
 
-        // Collect module initialization
+        // Collect module initialization 初始化collect
         bytes memory collectModuleReturnData = _initPubCollectModule(
             profileId,
             pubId,
@@ -148,7 +152,7 @@ library PublishingLogic {
             _collectModuleWhitelisted
         );
 
-        // Reference module initialization
+        // Reference module initialization 初始化reference模块
         bytes memory referenceModuleReturnData = _initPubReferenceModule(
             profileId,
             pubId,
@@ -157,7 +161,7 @@ library PublishingLogic {
             _pubByIdByProfile,
             _referenceModuleWhitelisted
         );
-
+        // post publication published 事件
         emit Events.PostCreated(
             profileId,
             pubId,
@@ -172,7 +176,7 @@ library PublishingLogic {
 
     /**
      * @notice Creates a comment publication mapped to the given profile.
-     *
+     * 创建评论
      * @dev This function is unique in that it requires many variables, so, unlike the other publishing functions,
      * we need to pass the full CommentData struct in memory to avoid a stack too deep error.
      *
@@ -192,12 +196,12 @@ library PublishingLogic {
         mapping(address => bool) storage _collectModuleWhitelisted,
         mapping(address => bool) storage _referenceModuleWhitelisted
     ) external {
-        // Validate existence of the pointed publication
+        // Validate existence of the pointed publication 确保检查publication
         uint256 pubCount = _profileById[vars.profileIdPointed].pubCount;
         if (pubCount < vars.pubIdPointed || vars.pubIdPointed == 0)
             revert Errors.PublicationDoesNotExist();
 
-        // Ensure the pointed publication is not the comment being created
+        // Ensure the pointed publication is not the comment being created  自己不允许评论自己
         if (vars.profileId == vars.profileIdPointed && vars.pubIdPointed == pubId)
             revert Errors.CannotCommentOnSelf();
 
@@ -205,7 +209,7 @@ library PublishingLogic {
         _pubByIdByProfile[vars.profileId][pubId].profileIdPointed = vars.profileIdPointed;
         _pubByIdByProfile[vars.profileId][pubId].pubIdPointed = vars.pubIdPointed;
 
-        // Collect Module Initialization
+        // Collect Module Initialization //初始化PUBLIC collectModule
         bytes memory collectModuleReturnData = _initPubCollectModule(
             vars.profileId,
             pubId,
@@ -215,7 +219,7 @@ library PublishingLogic {
             _collectModuleWhitelisted
         );
 
-        // Reference module initialization
+        // Reference module initialization //初始化profileId，pubId的referenceModule
         bytes memory referenceModuleReturnData = _initPubReferenceModule(
             vars.profileId,
             pubId,
@@ -225,10 +229,11 @@ library PublishingLogic {
             _referenceModuleWhitelisted
         );
 
-        // Reference module validation
+        // Reference module validation 
         address refModule = _pubByIdByProfile[vars.profileIdPointed][vars.pubIdPointed]
             .referenceModule;
         if (refModule != address(0)) {
+            //IReferenceModule处理评论
             IReferenceModule(refModule).processComment(
                 vars.profileId,
                 vars.profileIdPointed,
@@ -237,17 +242,18 @@ library PublishingLogic {
             );
         }
 
-        // Prevents a stack too deep error
+        // Prevents a stack too deep error 
+        //创建评论事件
         _emitCommentCreated(vars, pubId, collectModuleReturnData, referenceModuleReturnData);
     }
 
     /**
      * @notice Creates a mirror publication mapped to the given profile.
-     *
+     * 创建转发
      * @param vars The MirrorData struct to use to create the mirror.
      * @param pubId The publication ID to associate with this publication.
-     * @param _pubByIdByProfile The storage reference to the mapping of publications by publication ID by profile ID.
-     * @param _referenceModuleWhitelisted The storage reference to the mapping of whitelist status by reference module address.
+     * @param _pubByIdByProfile The storage reference to the mapping of publications by publication ID by profile ID.   publication ID 和 profile ID映射关系
+     * @param _referenceModuleWhitelisted The storage reference to the mapping of whitelist status by reference module address. reference模块白名单
      */
     function createMirror(
         DataTypes.MirrorData memory vars,
@@ -261,11 +267,12 @@ library PublishingLogic {
             vars.pubIdPointed,
             _pubByIdByProfile
         );
-
+        //转发publications的原始profileId
         _pubByIdByProfile[vars.profileId][pubId].profileIdPointed = rootProfileIdPointed;
+        //转发publications的原始PubI
         _pubByIdByProfile[vars.profileId][pubId].pubIdPointed = rootPubIdPointed;
 
-        // Reference module initialization
+        // Reference module initialization   //初始化profileId，pubId的referenceModule
         bytes memory referenceModuleReturnData = _initPubReferenceModule(
             vars.profileId,
             pubId,
@@ -279,6 +286,7 @@ library PublishingLogic {
         address refModule = _pubByIdByProfile[rootProfileIdPointed][rootPubIdPointed]
             .referenceModule;
         if (refModule != address(0)) {
+            //IReferenceModule处理转发
             IReferenceModule(refModule).processMirror(
                 vars.profileId,
                 rootProfileIdPointed,
@@ -286,7 +294,7 @@ library PublishingLogic {
                 vars.referenceModuleData
             );
         }
-
+        //转发事件
         emit Events.MirrorCreated(
             vars.profileId,
             pubId,
@@ -298,7 +306,7 @@ library PublishingLogic {
             block.timestamp
         );
     }
-
+    ///初始化PUBLIC collectModule
     function _initPubCollectModule(
         uint256 profileId,
         uint256 pubId,
@@ -317,7 +325,7 @@ library PublishingLogic {
                 collectModuleInitData
             );
     }
-
+    ///初始化profileId，pubId的referenceModule
     function _initPubReferenceModule(
         uint256 profileId,
         uint256 pubId,
@@ -328,7 +336,7 @@ library PublishingLogic {
         mapping(address => bool) storage _referenceModuleWhitelisted
     ) private returns (bytes memory) {
         if (referenceModule == address(0)) return new bytes(0);
-        if (!_referenceModuleWhitelisted[referenceModule])
+        if (!_referenceModuleWhitelisted[referenceModule]) //确保为白名单
             revert Errors.ReferenceModuleNotWhitelisted();
         _pubByIdByProfile[profileId][pubId].referenceModule = referenceModule;
         return
@@ -338,17 +346,18 @@ library PublishingLogic {
                 referenceModuleInitData
             );
     }
-
+    /// 初始化关注数据
     function _initFollowModule(
         uint256 profileId,
         address followModule,
         bytes memory followModuleInitData,
         mapping(address => bool) storage _followModuleWhitelisted
     ) private returns (bytes memory) {
+        //白名单检查
         if (!_followModuleWhitelisted[followModule]) revert Errors.FollowModuleNotWhitelisted();
         return IFollowModule(followModule).initializeFollowModule(profileId, followModuleInitData);
     }
-
+    ///创建评论事件
     function _emitCommentCreated(
         DataTypes.CommentData memory vars,
         uint256 pubId,
@@ -368,8 +377,8 @@ library PublishingLogic {
             referenceModuleReturnData,
             block.timestamp
         );
-    }
-
+    }   
+    ///创建Profile事件
     function _emitProfileCreated(
         uint256 profileId,
         DataTypes.CreateProfileData calldata vars,
@@ -387,7 +396,7 @@ library PublishingLogic {
             block.timestamp
         );
     }
-
+   ///校验处理器
     function _validateHandle(string calldata handle) private pure {
         bytes memory byteHandle = bytes(handle);
         if (byteHandle.length == 0 || byteHandle.length > Constants.MAX_HANDLE_LENGTH)

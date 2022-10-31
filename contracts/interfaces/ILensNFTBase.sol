@@ -17,7 +17,7 @@ interface ILensNFTBase {
      * @notice Implementation of an EIP-712 permit function for an ERC-721 NFT. We don't need to check
      * if the tokenId exists, since the function calls ownerOf(tokenId), which reverts if the tokenId does
      * not exist.
-     *
+     *  EIP-712 permit 授权操作
      * @param spender The NFT spender.
      * @param tokenId The NFT token ID to approve.
      * @param sig The EIP712 signature struct.
@@ -31,7 +31,7 @@ interface ILensNFTBase {
     /**
      * @notice Implementation of an EIP-712 permit-style function for ERC-721 operator approvals. Allows
      * an operator address to control all NFTs a given owner owns.
-     *
+     * 授权控制所有
      * @param owner The owner to set operator approvals for.
      * @param operator The operator to approve.
      * @param approved Whether to approve or revoke approval from the operator.
@@ -47,7 +47,7 @@ interface ILensNFTBase {
     /**
      * @notice Burns an NFT, removing it from circulation and essentially destroying it. This function can only
      * be called by the NFT to burn's owner.
-     *
+     * 销毁
      * @param tokenId The token ID of the token to burn.
      */
     function burn(uint256 tokenId) external;
@@ -55,7 +55,7 @@ interface ILensNFTBase {
     /**
      * @notice Implementation of an EIP-712 permit-style function for token burning. Allows anyone to burn
      * a token on behalf of the owner with a signature.
-     *
+     * 签名销毁
      * @param tokenId The token ID of the token to burn.
      * @param sig The EIP712 signature struct.
      */
@@ -63,7 +63,7 @@ interface ILensNFTBase {
 
     /**
      * @notice Returns the domain separator for this NFT contract.
-     *
+     * 域名分割符
      * @return bytes32 The domain separator.
      */
     function getDomainSeparator() external view returns (bytes32);

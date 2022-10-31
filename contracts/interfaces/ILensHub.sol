@@ -15,7 +15,7 @@ interface ILensHub {
     /**
      * @notice Initializes the LensHub NFT, setting the initial governance address as well as the name and symbol in
      * the LensNFTBase contract.
-     *
+     * 初始化LensHub NFT， 并设置governance地址
      * @param name The name to set for the hub NFT.
      * @param symbol The symbol to set for the hub NFT.
      * @param newGovernance The governance address to set.
@@ -29,7 +29,7 @@ interface ILensHub {
     /**
      * @notice Sets the privileged governance role. This function can only be called by the current governance
      * address.
-     *
+     * 设置治理地址
      * @param newGovernance The new governance address to set.
      */
     function setGovernance(address newGovernance) external;
@@ -37,7 +37,7 @@ interface ILensHub {
     /**
      * @notice Sets the emergency admin, which is a permissioned role able to set the protocol state. This function
      * can only be called by the governance address.
-     *
+     * 设置紧急管理员
      * @param newEmergencyAdmin The new emergency admin address to set.
      */
     function setEmergencyAdmin(address newEmergencyAdmin) external;
@@ -45,7 +45,7 @@ interface ILensHub {
     /**
      * @notice Sets the protocol state to either a global pause, a publishing pause or an unpaused state. This function
      * can only be called by the governance address or the emergency admin address.
-     *
+     * 设置协议状态
      * Note that this reverts if the emergency admin calls it if:
      *      1. The emergency admin is attempting to unpause.
      *      2. The emergency admin is calling while the protocol is already paused.
@@ -57,7 +57,7 @@ interface ILensHub {
     /**
      * @notice Adds or removes a profile creator from the whitelist. This function can only be called by the current
      * governance address.
-     *
+     * 设置profile白名单
      * @param profileCreator The profile creator address to add or remove from the whitelist.
      * @param whitelist Whether or not the profile creator should be whitelisted.
      */
@@ -66,7 +66,7 @@ interface ILensHub {
     /**
      * @notice Adds or removes a follow module from the whitelist. This function can only be called by the current
      * governance address.
-     *
+     * 设置follow模块白名单， 治理可以直接调用
      * @param followModule The follow module contract address to add or remove from the whitelist.
      * @param whitelist Whether or not the follow module should be whitelisted.
      */
@@ -75,7 +75,7 @@ interface ILensHub {
     /**
      * @notice Adds or removes a reference module from the whitelist. This function can only be called by the current
      * governance address.
-     *
+     * 设置reference模块白名单
      * @param referenceModule The reference module contract to add or remove from the whitelist.
      * @param whitelist Whether or not the reference module should be whitelisted.
      */
@@ -84,7 +84,7 @@ interface ILensHub {
     /**
      * @notice Adds or removes a collect module from the whitelist. This function can only be called by the current
      * governance address.
-     *
+     * 设置collect模块白名单
      * @param collectModule The collect module contract address to add or remove from the whitelist.
      * @param whitelist Whether or not the collect module should be whitelisted.
      */
@@ -93,7 +93,7 @@ interface ILensHub {
     /**
      * @notice Creates a profile with the specified parameters, minting a profile NFT to the given recipient. This
      * function must be called by a whitelisted profile creator.
-     *
+     * 创建profile
      * @param vars A CreateProfileData struct containing the following params:
      *      to: The address receiving the profile.
      *      handle: The handle to set for the profile, must be unique and non-empty.
@@ -105,14 +105,14 @@ interface ILensHub {
 
     /**
      * @notice Sets the mapping between wallet and its main profile identity.
-     *
+     * 设置给定profileId的默认映射set
      * @param profileId The token ID of the profile to set as the main profile identity.
      */
     function setDefaultProfile(uint256 profileId) external;
 
     /**
      * @notice Sets the mapping between wallet and its main profile identity via signature with the specified parameters.
-     *
+     * 设置给定profileId的默认映射set：签名版
      * @param vars A SetDefaultProfileWithSigData struct, including the regular parameters and an EIP712Signature struct.
      */
     function setDefaultProfileWithSig(DataTypes.SetDefaultProfileWithSigData calldata vars)
@@ -120,7 +120,7 @@ interface ILensHub {
 
     /**
      * @notice Sets a profile's follow module, must be called by the profile owner.
-     *
+     * 设置关注者的Follow模块
      * @param profileId The token ID of the profile to set the follow module for.
      * @param followModule The follow module to set for the given profile, must be whitelisted.
      * @param followModuleInitData The data to be passed to the follow module for initialization.
@@ -133,14 +133,14 @@ interface ILensHub {
 
     /**
      * @notice Sets a profile's follow module via signature with the specified parameters.
-     *
+     * 设置关注者的Follow模块：签名版
      * @param vars A SetFollowModuleWithSigData struct, including the regular parameters and an EIP712Signature struct.
      */
     function setFollowModuleWithSig(DataTypes.SetFollowModuleWithSigData calldata vars) external;
 
     /**
      * @notice Sets a profile's dispatcher, giving that dispatcher rights to publish to that profile.
-     *
+     * 设置profileId的分发者，分发者可以使用profile发布内容
      * @param profileId The token ID of the profile of the profile to set the dispatcher for.
      * @param dispatcher The dispatcher address to set for the given profile ID.
      */
@@ -148,14 +148,14 @@ interface ILensHub {
 
     /**
      * @notice Sets a profile's dispatcher via signature with the specified parameters.
-     *
+     * 设置profileId的分发者，分发者可以使用profile发布内容：签名版
      * @param vars A SetDispatcherWithSigData struct, including the regular parameters and an EIP712Signature struct.
      */
     function setDispatcherWithSig(DataTypes.SetDispatcherWithSigData calldata vars) external;
 
     /**
      * @notice Sets a profile's URI, which is reflected in the `tokenURI()` function.
-     *
+     * 设置profile的图片URI
      * @param profileId The token ID of the profile of the profile to set the URI for.
      * @param imageURI The URI to set for the given profile.
      */
@@ -163,7 +163,7 @@ interface ILensHub {
 
     /**
      * @notice Sets a profile's URI via signature with the specified parameters.
-     *
+     * 设置profile的图片URI：签名版
      * @param vars A SetProfileImageURIWithSigData struct, including the regular parameters and an EIP712Signature struct.
      */
     function setProfileImageURIWithSig(DataTypes.SetProfileImageURIWithSigData calldata vars)
@@ -171,7 +171,7 @@ interface ILensHub {
 
     /**
      * @notice Sets a followNFT URI for a given profile's follow NFT.
-     *
+     *设置profile的followNFT URI
      * @param profileId The token ID of the profile for which to set the followNFT URI.
      * @param followNFTURI The follow NFT URI to set.
      */
@@ -179,14 +179,14 @@ interface ILensHub {
 
     /**
      * @notice Sets a followNFT URI via signature with the specified parameters.
-     *
+     * 设置profile的followNFT URI：签名版
      * @param vars A SetFollowNFTURIWithSigData struct, including the regular parameters and an EIP712Signature struct.
      */
     function setFollowNFTURIWithSig(DataTypes.SetFollowNFTURIWithSigData calldata vars) external;
 
     /**
      * @notice Publishes a post to a given profile, must be called by the profile owner.
-     *
+     * 发布内容
      * @param vars A PostData struct containing the needed parameters.
      *
      * @return uint256 An integer representing the post's publication ID.
@@ -195,7 +195,7 @@ interface ILensHub {
 
     /**
      * @notice Publishes a post to a given profile via signature with the specified parameters.
-     *
+     * 发布内容：签名版
      * @param vars A PostWithSigData struct containing the regular parameters and an EIP712Signature struct.
      *
      * @return uint256 An integer representing the post's publication ID.
@@ -204,16 +204,16 @@ interface ILensHub {
 
     /**
      * @notice Publishes a comment to a given profile, must be called by the profile owner.
-     *
+     * 评论
      * @param vars A CommentData struct containing the needed parameters.
-     *
+     * 
      * @return uint256 An integer representing the comment's publication ID.
      */
     function comment(DataTypes.CommentData calldata vars) external returns (uint256);
 
     /**
      * @notice Publishes a comment to a given profile via signature with the specified parameters.
-     *
+     * 评论：签名版
      * @param vars A CommentWithSigData struct containing the regular parameters and an EIP712Signature struct.
      *
      * @return uint256 An integer representing the comment's publication ID.
@@ -222,7 +222,7 @@ interface ILensHub {
 
     /**
      * @notice Publishes a mirror to a given profile, must be called by the profile owner.
-     *
+     * 转发
      * @param vars A MirrorData struct containing the necessary parameters.
      *
      * @return uint256 An integer representing the mirror's publication ID.
@@ -231,7 +231,7 @@ interface ILensHub {
 
     /**
      * @notice Publishes a mirror to a given profile via signature with the specified parameters.
-     *
+     * 转发：签名版
      * @param vars A MirrorWithSigData struct containing the regular parameters and an EIP712Signature struct.
      *
      * @return uint256 An integer representing the mirror's publication ID.
@@ -240,11 +240,11 @@ interface ILensHub {
 
     /**
      * @notice Follows the given profiles, executing each profile's follow module logic (if any) and minting followNFTs to the caller.
-     *
+     * 关注
      * NOTE: Both the `profileIds` and `datas` arrays must be of the same length, regardless if the profiles do not have a follow module set.
      *
      * @param profileIds The token ID array of the profiles to follow.
-     * @param datas The arbitrary data array to pass to the follow module for each profile if needed.
+     * @param datas The arbitrary data array to pass to the follow module for each profile if needed. 关注模块数据
      *
      * @return uint256[] An array of integers representing the minted follow NFTs token IDs.
      */
@@ -254,7 +254,7 @@ interface ILensHub {
 
     /**
      * @notice Follows a given profile via signature with the specified parameters.
-     *
+     * 关注：签名版
      * @param vars A FollowWithSigData struct containing the regular parameters as well as the signing follower's address
      * and an EIP712Signature struct.
      *
@@ -266,7 +266,7 @@ interface ILensHub {
 
     /**
      * @notice Collects a given publication, executing collect module logic and minting a collectNFT to the caller.
-     *
+     * Collects给定publication，执行相应的逻辑
      * @param profileId The token ID of the profile that published the publication to collect.
      * @param pubId The publication to collect's publication ID.
      * @param data The arbitrary data to pass to the collect module if needed.
@@ -281,7 +281,7 @@ interface ILensHub {
 
     /**
      * @notice Collects a given publication via signature with the specified parameters.
-     *
+     * Collects给定publication：：签名版
      * @param vars A CollectWithSigData struct containing the regular parameters as well as the collector's address and
      * an EIP712Signature struct.
      *
@@ -292,7 +292,7 @@ interface ILensHub {
     /**
      * @dev Helper function to emit a detailed followNFT transfer event from the hub, to be consumed by frontends to track
      * followNFT transfers.
-     *
+     * 发出follow事件
      * @param profileId The token ID of the profile associated with the followNFT being transferred.
      * @param followNFTId The followNFT being transferred's token ID.
      * @param from The address the followNFT is being transferred from.
@@ -308,7 +308,7 @@ interface ILensHub {
     /**
      * @dev Helper function to emit a detailed collectNFT transfer event from the hub, to be consumed by frontends to track
      * collectNFT transfers.
-     *
+     * 发出Collect NFTT转移事件
      * @param profileId The token ID of the profile associated with the collect NFT being transferred.
      * @param pubId The publication ID associated with the collect NFT being transferred.
      * @param collectNFTId The collectNFT being transferred's token ID.
@@ -520,7 +520,7 @@ interface ILensHub {
 
     /**
      * @notice Returns the publication type associated with a given publication.
-     *
+     * publication 类型，post，评论，转发
      * @param profileId The token ID of the profile that published the publication to query.
      * @param pubId The publication ID of the publication to query.
      *

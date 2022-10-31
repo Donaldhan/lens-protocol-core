@@ -23,7 +23,7 @@ import {IERC721Enumerable} from '@openzeppelin/contracts/token/ERC721/extensions
  *
  * @notice This is the main entrypoint of the Lens Protocol. It contains governance functionality as well as
  * publishing and profile interaction functionality.
- *
+ * Len是协议的主要入口，包含governance， publishing和profile交互功能
  * NOTE: The Lens Protocol is unique in that frontend operators need to track a potentially overwhelming
  * number of NFT contracts and interactions at once. For that reason, we've made two quirky design decisions:
  *      1. Both Follow & Collect NFTs invoke an LensHub callback on transfer with the sole purpose of emitting an event.

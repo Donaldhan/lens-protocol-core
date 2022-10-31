@@ -21,6 +21,7 @@ import {Errors} from '../libraries/Errors.sol';
  * Initializable contract
  */
 abstract contract VersionedInitializable {
+    //原始实现
     address private immutable originalImpl;
 
     /**
@@ -29,10 +30,11 @@ abstract contract VersionedInitializable {
     uint256 private lastInitializedRevision = 0;
 
     /**
-     * @dev Modifier to use in the initializer function of a contract.
+     * @dev Modifier to use in the initializer function of a contract. 版本升级
      */
     modifier initializer() {
         uint256 revision = getRevision();
+        //已经初始化
         if (address(this) == originalImpl) revert Errors.CannotInitImplementation();
         if (revision <= lastInitializedRevision) revert Errors.Initialized();
         lastInitializedRevision = revision;
@@ -44,7 +46,7 @@ abstract contract VersionedInitializable {
     }
 
     /**
-     * @dev returns the revision number of the contract
+     * @dev returns the revision number of the contract 当前版本
      * Needs to be defined in the inherited class as a constant.
      **/
     function getRevision() internal pure virtual returns (uint256);

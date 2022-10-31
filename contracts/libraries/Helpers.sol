@@ -38,16 +38,18 @@ library Helpers {
             address
         )
     {
-        address collectModule = _pubByIdByProfile[profileId][pubId].collectModule;
+        //收集模块
+        address collectModule = _pubByIdByProfile[profileId][pubId].collectModule;  
         if (collectModule != address(0)) {
             return (profileId, pubId, collectModule);
         } else {
+            //publication 当前引用的，publication 关联的profile token 的ID， 用于转发和评论
             uint256 pointedTokenId = _pubByIdByProfile[profileId][pubId].profileIdPointed;
             // We validate existence here as an optimization, so validating in calling contracts is unnecessary
             if (pointedTokenId == 0) revert Errors.PublicationDoesNotExist();
 
             uint256 pointedPubId = _pubByIdByProfile[profileId][pubId].pubIdPointed;
-
+            //向上取一层，只支持两级转发？？
             address pointedCollectModule = _pubByIdByProfile[pointedTokenId][pointedPubId]
                 .collectModule;
 

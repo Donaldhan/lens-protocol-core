@@ -11,7 +11,7 @@ library ProfileTokenURILogic {
 
     /**
      * @notice Generates the token URI for the profile NFT.
-     *
+     * 生成profile NFT的token URI
      * @dev The decoded token URI JSON metadata contains the following fields: name, description, image and attributes.
      * The image field contains a base64-encoded SVG. Both the JSON metadata and the image are generated fully on-chain.
      *
@@ -60,7 +60,7 @@ library ProfileTokenURILogic {
 
     /**
      * @notice Generates the token image.
-     *
+     * 生成token图片
      * @dev If the image URI was set and meets URI format conditions, it will be embedded in the token image.
      * Otherwise, a default picture will be used. Handle font size is a function of handle length.
      *
@@ -90,7 +90,7 @@ library ProfileTokenURILogic {
 
     /**
      * @notice Gets the fragment of the SVG correponding to the profile picture.
-     *
+     * profile图片的svg 片段
      * @dev If the image URI was set and meets URI format conditions, this will return an image tag referencing it.
      * Otherwise, a group tag that renders the default picture will be returned.
      *
@@ -116,7 +116,7 @@ library ProfileTokenURILogic {
 
     /**
      * @notice Maps the handle length to a font size.
-     *
+     * 处理字体size长度
      * @dev Gives the font size as a function of handle length using the following formula:
      *
      *      fontSize(handleLength) = 24                              when handleLength <= 17
@@ -134,7 +134,7 @@ library ProfileTokenURILogic {
 
     /**
      * @notice Decides if Profile NFT should use user provided custom profile picture or the default one.
-     *
+     * 检查用户proflie imageURI 是否有效
      * @dev It checks if there is a custom imageURI set and makes sure it does not contain double-quotes to prevent
      * injection attacks through the generated SVG.
      *
