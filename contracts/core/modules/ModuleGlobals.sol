@@ -12,17 +12,17 @@ import {IModuleGlobals} from '../../interfaces/IModuleGlobals.sol';
  *
  * @notice This contract contains data relevant to Lens modules, such as the module governance address, treasury
  * address and treasury fee BPS.
- *
+ * lens模块
  * NOTE: The reason we have an additional governance address instead of just fetching it from the hub is to
  * allow the flexibility of using different governance executors.
  */
 contract ModuleGlobals is IModuleGlobals {
-    uint16 internal constant BPS_MAX = 10000;
+    uint16 internal constant BPS_MAX = 10000;//金库费用，100%
 
-    mapping(address => bool) internal _currencyWhitelisted;
-    address internal _governance;
-    address internal _treasury;
-    uint16 internal _treasuryFee;
+    mapping(address => bool) internal _currencyWhitelisted;//token白名单
+    address internal _governance; //治理服务
+    address internal _treasury; //金库地址
+    uint16 internal _treasuryFee; //金库费用
 
     modifier onlyGov() {
         if (msg.sender != _governance) revert Errors.NotGovernance();
@@ -34,7 +34,7 @@ contract ModuleGlobals is IModuleGlobals {
      *
      * @param governance The governance address which has additional control over setting certain parameters.
      * @param treasury The treasury address to direct fees to.
-     * @param treasuryFee The treasury fee in BPS to levy on collects.
+     * @param treasuryFee The treasury fee in BPS to levy on collects. 在collect时，征收的金库费用百分比
      */
     constructor(
         address governance,
@@ -106,6 +106,7 @@ contract ModuleGlobals is IModuleGlobals {
     }
 
     function _setTreasuryFee(uint16 newTreasuryFee) internal {
+        //不能超过50%
         if (newTreasuryFee >= BPS_MAX / 2) revert Errors.InitParamsInvalid();
         uint16 prevTreasuryFee = _treasuryFee;
         _treasuryFee = newTreasuryFee;

@@ -21,25 +21,26 @@ import {LensNFTBase} from './base/LensNFTBase.sol';
  * NOTE: This contract assumes total NFT supply for this follow NFT will never exceed 2^128 - 1
  */
 contract FollowNFT is LensNFTBase, IFollowNFT {
+    //快照
     struct Snapshot {
         uint128 blockNumber;
         uint128 value;
     }
-
+   //hub 地址
     address public immutable HUB;
-
+    //委托代理类型签名
     bytes32 internal constant DELEGATE_BY_SIG_TYPEHASH =
         keccak256(
             'DelegateBySig(address delegator,address delegatee,uint256 nonce,uint256 deadline)'
         );
 
-    mapping(address => mapping(uint256 => Snapshot)) internal _snapshots;
-    mapping(address => address) internal _delegates;
-    mapping(address => uint256) internal _snapshotCount;
-    mapping(uint256 => Snapshot) internal _delSupplySnapshots;
-    uint256 internal _delSupplySnapshotCount;
-    uint256 internal _profileId;
-    uint256 internal _tokenIdCounter;
+    mapping(address => mapping(uint256 => Snapshot)) internal _snapshots;  //用户快照
+    mapping(address => address) internal _delegates; //用户代理
+    mapping(address => uint256) internal _snapshotCount;//用户快照计数器
+    mapping(uint256 => Snapshot) internal _delSupplySnapshots;//总供应量
+    uint256 internal _delSupplySnapshotCount;//总供应量快照索引
+    uint256 internal _profileId; //profile
+    uint256 internal _tokenIdCounter;//token计数器
 
     bool private _initialized;
 
@@ -58,7 +59,7 @@ contract FollowNFT is LensNFTBase, IFollowNFT {
         emit Events.FollowNFTInitialized(profileId, block.timestamp);
     }
 
-    /// @inheritdoc IFollowNFT
+    /// @inheritdoc IFollowNFT 挖取
     function mint(address to) external override returns (uint256) {
         if (msg.sender != HUB) revert Errors.NotHub();
         unchecked {
@@ -68,7 +69,7 @@ contract FollowNFT is LensNFTBase, IFollowNFT {
         }
     }
 
-    /// @inheritdoc IFollowNFT
+    /// @inheritdoc IFollowNFT 代理
     function delegate(address delegatee) external override {
         _delegate(msg.sender, delegatee);
     }
@@ -99,7 +100,7 @@ contract FollowNFT is LensNFTBase, IFollowNFT {
         _delegate(delegator, delegatee);
     }
 
-    /// @inheritdoc IFollowNFT
+    /// @inheritdoc IFollowNFT 用户
     function getPowerByBlockNumber(address user, uint256 blockNumber)
         external
         view
@@ -124,7 +125,7 @@ contract FollowNFT is LensNFTBase, IFollowNFT {
         if (snapshotCount == 0) return 0; // Returning zero since this means a delegation has never occurred
         return _getSnapshotValueByBlockNumber(_delSupplySnapshots, blockNumber, snapshotCount);
     }
-
+    ///处理器
     function name() public view override returns (string memory) {
         string memory handle = ILensHub(HUB).getHandle(_profileId);
         return string(abi.encodePacked(handle, Constants.FOLLOW_NFT_NAME_SUFFIX));
@@ -176,6 +177,7 @@ contract FollowNFT is LensNFTBase, IFollowNFT {
 
     /**
      * @dev Upon transfers, we move the appropriate delegations, and emit the transfer event in the hub.
+     * 转移nft
      */
     function _beforeTokenTransfer(
         address from,
@@ -185,24 +187,28 @@ contract FollowNFT is LensNFTBase, IFollowNFT {
         address fromDelegatee = _delegates[from];
         address toDelegatee = _delegates[to];
         address followModule = ILensHub(HUB).getFollowModule(_profileId);
-
+        //更新委托
         _moveDelegate(fromDelegatee, toDelegatee, 1);
 
         super._beforeTokenTransfer(from, to, tokenId);
         ILensHub(HUB).emitFollowNFTTransferEvent(_profileId, tokenId, from, to);
         if (followModule != address(0)) {
+            //关注模块 hook
             IFollowModule(followModule).followModuleTransferHook(_profileId, from, to, tokenId);
         }
     }
-
+    //委托代理
     function _delegate(address delegator, address delegatee) internal {
+        //被代理者余额
         uint256 delegatorBalance = balanceOf(delegator);
+        //先前代理者
         address previousDelegate = _delegates[delegator];
         _delegates[delegator] = delegatee;
+        //移动代理权重
         _moveDelegate(previousDelegate, delegatee, delegatorBalance);
     }
-
-    function _moveDelegate(
+    ///移动代理权重
+     function _moveDelegate(
         address from,
         address to,
         uint256 amount
@@ -210,18 +216,20 @@ contract FollowNFT is LensNFTBase, IFollowNFT {
         unchecked {
             bool fromZero = from == address(0);
             if (!fromZero) {
+                //当前用户权重
                 uint256 fromSnapshotCount = _snapshotCount[from];
 
                 // Underflow is impossible since, if from != address(0), then a delegation must have occurred (at least 1 snapshot)
                 uint256 previous = _snapshots[from][fromSnapshotCount - 1].value;
                 uint128 newValue = uint128(previous - amount);
-
+                //写新的快照
                 _writeSnapshot(from, newValue, fromSnapshotCount);
                 emit Events.FollowNFTDelegatedPowerChanged(from, newValue, block.timestamp);
             }
-
+            //更为委托代理人的快照
             if (to != address(0)) {
                 // if from == address(0) then this is an initial delegation (add amount to supply)
+                // 初始化代理，添加供应量
                 if (fromZero) {
                     // It is expected behavior that the `previousDelSupply` underflows upon the first delegation,
                     // returning the expected value of zero
@@ -229,11 +237,13 @@ contract FollowNFT is LensNFTBase, IFollowNFT {
                     uint128 previousDelSupply = _delSupplySnapshots[delSupplySnapshotCount - 1]
                         .value;
                     uint128 newDelSupply = uint128(previousDelSupply + amount);
+                    //写新的供应量
                     _writeSupplySnapshot(newDelSupply, delSupplySnapshotCount);
                 }
 
                 // It is expected behavior that `previous` underflows upon the first delegation to an address,
                 // returning the expected value of zero
+                // 给委托者增加权限
                 uint256 toSnapshotCount = _snapshotCount[to];
                 uint128 previous = _snapshots[to][toSnapshotCount - 1].value;
                 uint128 newValue = uint128(previous + amount);
@@ -242,7 +252,7 @@ contract FollowNFT is LensNFTBase, IFollowNFT {
             } else {
                 // If from != address(0) then this is removing a delegation, otherwise we're dealing with a
                 // non-delegated burn of tokens and don't need to take any action
-                if (!fromZero) {
+                if (!fromZero) {//
                     // Upon removing delegation (from != address(0) && to == address(0)), supply calculations cannot
                     // underflow because if from != address(0), then a delegation must have previously occurred, so
                     // the snapshot count must be >= 1 and the previous delegated supply must be >= amount
@@ -255,7 +265,7 @@ contract FollowNFT is LensNFTBase, IFollowNFT {
             }
         }
     }
-
+    ///写用户权重快照
     function _writeSnapshot(
         address owner,
         uint128 newValue,
@@ -269,7 +279,7 @@ contract FollowNFT is LensNFTBase, IFollowNFT {
             if (
                 ownerSnapshotCount != 0 &&
                 ownerSnapshots[ownerSnapshotCount - 1].blockNumber == currentBlock
-            ) {
+            ) { //同区块更新
                 ownerSnapshots[ownerSnapshotCount - 1].value = newValue;
             } else {
                 ownerSnapshots[ownerSnapshotCount] = Snapshot(currentBlock, newValue);
@@ -277,7 +287,7 @@ contract FollowNFT is LensNFTBase, IFollowNFT {
             }
         }
     }
-
+    ///写新的供应量
     function _writeSupplySnapshot(uint128 newValue, uint256 supplySnapshotCount) internal {
         unchecked {
             uint128 currentBlock = uint128(block.number);
@@ -286,7 +296,7 @@ contract FollowNFT is LensNFTBase, IFollowNFT {
             if (
                 supplySnapshotCount != 0 &&
                 _delSupplySnapshots[supplySnapshotCount - 1].blockNumber == currentBlock
-            ) {
+            ) {//同区块更新
                 _delSupplySnapshots[supplySnapshotCount - 1].value = newValue;
             } else {
                 _delSupplySnapshots[supplySnapshotCount] = Snapshot(currentBlock, newValue);

@@ -23,18 +23,21 @@ import {IERC721} from '@openzeppelin/contracts/token/ERC721/IERC721.sol';
 abstract contract FollowValidationModuleBase is ModuleBase {
     /**
      * @notice Validates whether a given user is following a given profile.
-     *
+     * 校验是否为用户的关注者
      * @dev It will revert if the user is not following the profile except the case when the user is the profile owner.
      *
      * @param profileId The ID of the profile that should be followed by the given user.
      * @param user The address of the user that should be following the given profile.
      */
     function _checkFollowValidity(uint256 profileId, address user) internal view {
+        //follow 模块
         address followModule = ILensHub(HUB).getFollowModule(profileId);
         bool isFollowing;
         if (followModule != address(0)) {
+            //是否关注者
             isFollowing = IFollowModule(followModule).isFollowing(profileId, user, 0);
         } else {
+            //查看是否拥有用户的follow NFT
             address followNFT = ILensHub(HUB).getFollowNFT(profileId);
             isFollowing = followNFT != address(0) && IERC721(followNFT).balanceOf(user) != 0;
         }

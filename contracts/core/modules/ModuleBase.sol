@@ -13,8 +13,8 @@ import {Events} from '../../libraries/Events.sol';
  * `onlyHub` modifier.
  */
 abstract contract ModuleBase {
-    address public immutable HUB;
-
+    address public immutable HUB; //hub
+    //hub调用权限
     modifier onlyHub() {
         if (msg.sender != HUB) revert Errors.NotHub();
         _;

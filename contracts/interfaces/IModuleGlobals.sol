@@ -5,35 +5,35 @@ pragma solidity 0.8.10;
 /**
  * @title IModuleGlobals
  * @author Lens Protocol
- *
+ * 全局模块
  * @notice This is the interface for the ModuleGlobals contract, a data providing contract to be queried by modules
  * for the most up-to-date parameters.
  */
 interface IModuleGlobals {
     /**
      * @notice Sets the governance address. This function can only be called by governance.
-     *
-     * @param newGovernance The new governance address to set.
+     * 设置管理员地址
+     * @param newGovernance The new governance address to set. 
      */
     function setGovernance(address newGovernance) external;
 
     /**
      * @notice Sets the treasury address. This function can only be called by governance.
-     *
+     * 设置金库地址
      * @param newTreasury The new treasury address to set.
      */
     function setTreasury(address newTreasury) external;
 
     /**
      * @notice Sets the treasury fee. This function can only be called by governance.
-     *
+     * 设置金库费用
      * @param newTreasuryFee The new treasury fee to set.
      */
     function setTreasuryFee(uint16 newTreasuryFee) external;
 
     /**
      * @notice Adds or removes a currency from the whitelist. This function can only be called by governance.
-     *
+     * 设置金库token白名单
      * @param currency The currency to add or remove from the whitelist.
      * @param toWhitelist Whether to add or remove the currency from the whitelist.
      */
