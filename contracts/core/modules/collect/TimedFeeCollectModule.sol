@@ -117,11 +117,11 @@ contract TimedFeeCollectModule is FeeModuleBase, FollowValidationModuleBase, ICo
         if (_dataByPublicationByProfile[profileId][pubId].followerOnly)
             _checkFollowValidity(profileId, collector);
         uint256 endTimestamp = _dataByPublicationByProfile[profileId][pubId].endTimestamp;
-        if (block.timestamp > endTimestamp) revert Errors.CollectExpired();
+        if (block.timestamp > endTimestamp) revert Errors.CollectExpired(); //验证截止时间
 
-        if (referrerProfileId == profileId) {
+        if (referrerProfileId == profileId) {//处理collect原始作品
             _processCollect(collector, profileId, pubId, data);
-        } else {
+        } else {//处理collect 转发作品
             _processCollectWithReferral(referrerProfileId, collector, profileId, pubId, data);
         }
     }

@@ -12,7 +12,7 @@ import {IERC721} from '@openzeppelin/contracts/token/ERC721/IERC721.sol';
 /**
  * @title ApprovalFollowModule
  * @author Lens Protocol
- *
+ * 授权允许Follow模块
  * @notice This follow module only allows addresses that are approved for a profile by the profile owner to follow.
  */
 contract ApprovalFollowModule is FollowValidatorFollowModuleBase {
@@ -24,7 +24,7 @@ contract ApprovalFollowModule is FollowValidatorFollowModuleBase {
 
     /**
      * @notice A custom function that allows profile owners to customize approved addresses.
-     *
+     * 批量授权地址
      * @param profileId The profile ID to approve/disapprove follower addresses for.
      * @param addresses The addresses to approve/disapprove for following the profile.
      * @param toApprove Whether to approve or disapprove the addresses for following the profile.
@@ -51,7 +51,7 @@ contract ApprovalFollowModule is FollowValidatorFollowModuleBase {
 
     /**
      * @notice This follow module works on custom profile owner approvals.
-     *
+     *  初始化授权模块
      * @param profileId The profile ID of the profile to initialize this module for.
      * @param data The arbitrary data parameter, decoded into:
      *      address[] addresses: The array of addresses to approve initially.
@@ -67,6 +67,7 @@ contract ApprovalFollowModule is FollowValidatorFollowModuleBase {
         address owner = IERC721(HUB).ownerOf(profileId);
 
         if (data.length > 0) {
+            //从data中解出授权地址
             address[] memory addresses = abi.decode(data, (address[]));
             uint256 addressesLength = addresses.length;
             for (uint256 i = 0; i < addressesLength; ) {
@@ -82,6 +83,7 @@ contract ApprovalFollowModule is FollowValidatorFollowModuleBase {
     /**
      * @dev Processes a follow by:
      *  1. Validating that the follower has been approved for that profile by the profile owner
+     * 校验follow
      */
     function processFollow(
         address follower,
@@ -106,7 +108,7 @@ contract ApprovalFollowModule is FollowValidatorFollowModuleBase {
 
     /**
      * @notice Returns whether the given address is approved for the profile owned by a given address.
-     *
+     * 授权查询
      * @param profileOwner The profile owner of the profile to query the approval with.
      * @param profileId The token ID of the profile to query approval with.
      * @param toCheck The address to query approval for.
@@ -123,7 +125,7 @@ contract ApprovalFollowModule is FollowValidatorFollowModuleBase {
 
     /**
      * @notice Returns whether the given addresses are approved for the profile owned by a given address.
-     *
+     * 授权查询批量模式
      * @param profileOwner The profile owner of the profile to query the approvals with.
      * @param profileId The token ID of the profile to query approvals with.
      * @param toCheck The address array to query approvals for.

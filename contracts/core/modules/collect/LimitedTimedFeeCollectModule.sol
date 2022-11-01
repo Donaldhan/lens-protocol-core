@@ -31,7 +31,7 @@ struct ProfilePublicationData {
     address recipient;
     uint16 referralFee;
     bool followerOnly;
-    uint40 endTimestamp;
+    uint40 endTimestamp;//时间限制
 }
 
 /**
@@ -47,7 +47,7 @@ struct ProfilePublicationData {
 contract LimitedTimedFeeCollectModule is FeeModuleBase, FollowValidationModuleBase, ICollectModule {
     using SafeERC20 for IERC20;
 
-    uint24 internal constant ONE_DAY = 24 hours;
+    uint24 internal constant ONE_DAY = 24 hours; //默认限制24小时
 
     mapping(uint256 => mapping(uint256 => ProfilePublicationData))
         internal _dataByPublicationByProfile;
@@ -76,7 +76,8 @@ contract LimitedTimedFeeCollectModule is FeeModuleBase, FollowValidationModuleBa
     ) external override onlyHub returns (bytes memory) {
         unchecked {
             uint40 endTimestamp = uint40(block.timestamp) + ONE_DAY;
-
+            //解出数据
+           
             (
                 uint256 collectLimit,
                 uint256 amount,
@@ -85,6 +86,7 @@ contract LimitedTimedFeeCollectModule is FeeModuleBase, FollowValidationModuleBa
                 uint16 referralFee,
                 bool followerOnly
             ) = abi.decode(data, (uint256, uint256, address, address, uint16, bool));
+            //白名单验证
             if (
                 collectLimit == 0 ||
                 !_currencyWhitelisted(currency) ||
@@ -128,21 +130,21 @@ contract LimitedTimedFeeCollectModule is FeeModuleBase, FollowValidationModuleBa
         uint256 pubId,
         bytes calldata data
     ) external override onlyHub {
-        if (_dataByPublicationByProfile[profileId][pubId].followerOnly)
+        if (_dataByPublicationByProfile[profileId][pubId].followerOnly) // //关注者验证
             _checkFollowValidity(profileId, collector);
         uint256 endTimestamp = _dataByPublicationByProfile[profileId][pubId].endTimestamp;
-        if (block.timestamp > endTimestamp) revert Errors.CollectExpired();
+        if (block.timestamp > endTimestamp) revert Errors.CollectExpired(); //验证截止时间
 
         if (
             _dataByPublicationByProfile[profileId][pubId].currentCollects >=
             _dataByPublicationByProfile[profileId][pubId].collectLimit
-        ) {
+        ) {//超限
             revert Errors.MintLimitExceeded();
         } else {
             ++_dataByPublicationByProfile[profileId][pubId].currentCollects;
-            if (referrerProfileId == profileId) {
+            if (referrerProfileId == profileId) {//处理collect原始作品
                 _processCollect(collector, profileId, pubId, data);
-            } else {
+            } else {//处理collect 转发作品
                 _processCollectWithReferral(referrerProfileId, collector, profileId, pubId, data);
             }
         }
@@ -164,7 +166,7 @@ contract LimitedTimedFeeCollectModule is FeeModuleBase, FollowValidationModuleBa
     {
         return _dataByPublicationByProfile[profileId][pubId];
     }
-
+    ///处理collect原始作品
     function _processCollect(
         address collector,
         uint256 profileId,
@@ -184,7 +186,7 @@ contract LimitedTimedFeeCollectModule is FeeModuleBase, FollowValidationModuleBa
         if (treasuryAmount > 0)
             IERC20(currency).safeTransferFrom(collector, treasury, treasuryAmount);
     }
-
+    ///处理collect 转发作品
     function _processCollectWithReferral(
         uint256 referrerProfileId,
         address collector,

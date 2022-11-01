@@ -16,7 +16,7 @@ import {IERC721} from '@openzeppelin/contracts/token/ERC721/IERC721.sol';
  */
 contract ProfileFollowModule is FollowValidatorFollowModuleBase {
     /**
-     * Given two profile IDs tells if the former has already been used to follow the latter.
+     * Given two profile IDs tells if the former has already been used to follow the latter. 授权的profile
      */
     mapping(uint256 => mapping(uint256 => bool)) public isProfileFollowing;
 
@@ -50,10 +50,13 @@ contract ProfileFollowModule is FollowValidatorFollowModuleBase {
         uint256 profileId,
         bytes calldata data
     ) external override onlyHub {
+        //follower profile
         uint256 followerProfileId = abi.decode(data, (uint256));
+        //follower 权限验证
         if (IERC721(HUB).ownerOf(followerProfileId) != follower) {
             revert Errors.NotProfileOwner();
         }
+        //已关注
         if (isProfileFollowing[followerProfileId][profileId]) {
             revert Errors.FollowInvalid();
         } else {

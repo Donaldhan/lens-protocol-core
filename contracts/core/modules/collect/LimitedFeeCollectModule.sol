@@ -14,8 +14,8 @@ import {IERC721} from '@openzeppelin/contracts/token/ERC721/IERC721.sol';
 /**
  * @notice A struct containing the necessary data to execute collect actions on a publication.
  *
- * @param collectLimit The maximum number of collects for this publication.
- * @param currentCollects The current number of collects for this publication.
+ * @param collectLimit The maximum number of collects for this publication.  最大收集数量
+ * @param currentCollects The current number of collects for this publication. 当前收集数量
  * @param amount The collecting cost associated with this publication.
  * @param currency The currency associated with this publication.
  * @param recipient The recipient address associated with this publication.
@@ -69,6 +69,7 @@ contract LimitedFeeCollectModule is FeeModuleBase, FollowValidationModuleBase, I
         uint256 pubId,
         bytes calldata data
     ) external override onlyHub returns (bytes memory) {
+        //解析收集数据
         (
             uint256 collectLimit,
             uint256 amount,
@@ -77,6 +78,7 @@ contract LimitedFeeCollectModule is FeeModuleBase, FollowValidationModuleBase, I
             uint16 referralFee,
             bool followerOnly
         ) = abi.decode(data, (uint256, uint256, address, address, uint16, bool));
+        //白名单
         if (
             collectLimit == 0 ||
             !_currencyWhitelisted(currency) ||
@@ -108,18 +110,19 @@ contract LimitedFeeCollectModule is FeeModuleBase, FollowValidationModuleBase, I
         uint256 pubId,
         bytes calldata data
     ) external override onlyHub {
+        //关注者验证
         if (_dataByPublicationByProfile[profileId][pubId].followerOnly)
             _checkFollowValidity(profileId, collector);
         if (
             _dataByPublicationByProfile[profileId][pubId].currentCollects >=
             _dataByPublicationByProfile[profileId][pubId].collectLimit
-        ) {
+        ) {//超限
             revert Errors.MintLimitExceeded();
         } else {
             ++_dataByPublicationByProfile[profileId][pubId].currentCollects;
-            if (referrerProfileId == profileId) {
+            if (referrerProfileId == profileId) {//处理collect原始作品
                 _processCollect(collector, profileId, pubId, data);
-            } else {
+            } else {//处理collect 转发作品    
                 _processCollectWithReferral(referrerProfileId, collector, profileId, pubId, data);
             }
         }
@@ -141,7 +144,7 @@ contract LimitedFeeCollectModule is FeeModuleBase, FollowValidationModuleBase, I
     {
         return _dataByPublicationByProfile[profileId][pubId];
     }
-
+     ///处理collect原始作品
     function _processCollect(
         address collector,
         uint256 profileId,
@@ -161,7 +164,7 @@ contract LimitedFeeCollectModule is FeeModuleBase, FollowValidationModuleBase, I
         if (treasuryAmount > 0)
             IERC20(currency).safeTransferFrom(collector, treasury, treasuryAmount);
     }
-
+    ///处理collect 转发作品    
     function _processCollectWithReferral(
         uint256 referrerProfileId,
         address collector,

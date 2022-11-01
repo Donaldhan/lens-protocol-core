@@ -6,8 +6,8 @@ import {ICollectModule} from '../../../interfaces/ICollectModule.sol';
 import {Errors} from '../../../libraries/Errors.sol';
 
 /**
- * @title RevertCollectModule
- * @author Lens Protocol
+ * @title RevertCollectModule 
+ * @author Lens Protocol 
  *
  * @notice This is a simple Lens CollectModule implementation, inheriting from the ICollectModule interface.
  *
@@ -28,6 +28,7 @@ contract RevertCollectModule is ICollectModule {
     /**
      * @dev Processes a collect by:
      *  1. Always reverting
+     * 不允许collect
      */
     function processCollect(
         uint256 referrerProfileId,

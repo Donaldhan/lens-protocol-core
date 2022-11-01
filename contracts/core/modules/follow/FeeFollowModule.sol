@@ -14,15 +14,15 @@ import {IERC721} from '@openzeppelin/contracts/token/ERC721/IERC721.sol';
 
 /**
  * @notice A struct containing the necessary data to execute follow actions on a given profile.
- *
+ * 
  * @param currency The currency associated with this profile.
- * @param amount The following cost associated with this profile.
- * @param recipient The recipient address associated with this profile.
+ * @param amount The following cost associated with this profile. follow 需要支付的数量
+ * @param recipient The recipient address associated with this profile. profile收款账号
  */
 struct ProfileData {
-    address currency;
-    uint256 amount;
-    address recipient;
+    address currency; //token地址
+    uint256 amount;//数量
+    address recipient;//接收者
 }
 
 /**
@@ -35,13 +35,13 @@ struct ProfileData {
 contract FeeFollowModule is FeeModuleBase, FollowValidatorFollowModuleBase {
     using SafeERC20 for IERC20;
 
-    mapping(uint256 => ProfileData) internal _dataByProfile;
+    mapping(uint256 => ProfileData) internal _dataByProfile;//profile费用模块
 
     constructor(address hub, address moduleGlobals) FeeModuleBase(moduleGlobals) ModuleBase(hub) {}
 
     /**
      * @notice This follow module levies a fee on follows.
-     *
+     * 初始化proflle的费用模块
      * @param profileId The profile ID of the profile to initialize this module for.
      * @param data The arbitrary data parameter, decoded into:
      *      address currency: The currency address, must be internally whitelisted.
@@ -60,6 +60,7 @@ contract FeeFollowModule is FeeModuleBase, FollowValidatorFollowModuleBase {
             data,
             (uint256, address, address)
         );
+        //白名单，参数检查
         if (!_currencyWhitelisted(currency) || recipient == address(0) || amount == 0)
             revert Errors.InitParamsInvalid();
 
@@ -80,13 +81,14 @@ contract FeeFollowModule is FeeModuleBase, FollowValidatorFollowModuleBase {
     ) external override onlyHub {
         uint256 amount = _dataByProfile[profileId].amount;
         address currency = _dataByProfile[profileId].currency;
+        //校验token地址和数量
         _validateDataIsExpected(data, currency, amount);
-
+        //金库地址，金库费率
         (address treasury, uint16 treasuryFee) = _treasuryData();
         address recipient = _dataByProfile[profileId].recipient;
         uint256 treasuryAmount = (amount * treasuryFee) / BPS_MAX;
         uint256 adjustedAmount = amount - treasuryAmount;
-
+        //转账给接受者和并扣押费用到治理金库
         IERC20(currency).safeTransferFrom(follower, recipient, adjustedAmount);
         if (treasuryAmount > 0)
             IERC20(currency).safeTransferFrom(follower, treasury, treasuryAmount);

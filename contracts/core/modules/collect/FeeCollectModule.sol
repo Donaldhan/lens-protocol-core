@@ -14,11 +14,11 @@ import {IERC721} from '@openzeppelin/contracts/token/ERC721/IERC721.sol';
 /**
  * @notice A struct containing the necessary data to execute collect actions on a publication.
  *
- * @param amount The collecting cost associated with this publication.
- * @param currency The currency associated with this publication.
- * @param recipient The recipient address associated with this publication.
- * @param referralFee The referral fee associated with this publication.
- * @param followerOnly Whether only followers should be able to collect.
+ * @param amount The collecting cost associated with this publication.  collect 作品需要支付的数量
+ * @param currency The currency associated with this publication. token地址
+ * @param recipient The recipient address associated with this publication. 作品创建者接收地址
+ * @param referralFee The referral fee associated with this publication. 作品referral的费用
+ * @param followerOnly Whether only followers should be able to collect. 是否仅为follow可以收集
  */
 struct ProfilePublicationData {
     uint256 amount;
@@ -64,6 +64,7 @@ contract FeeCollectModule is FeeModuleBase, FollowValidationModuleBase, ICollect
         uint256 pubId,
         bytes calldata data
     ) external override onlyHub returns (bytes memory) {
+        //解码作品收集数据
         (
             uint256 amount,
             address currency,
@@ -71,6 +72,7 @@ contract FeeCollectModule is FeeModuleBase, FollowValidationModuleBase, ICollect
             uint16 referralFee,
             bool followerOnly
         ) = abi.decode(data, (uint256, address, address, uint16, bool));
+        //白名单控制
         if (
             !_currencyWhitelisted(currency) ||
             recipient == address(0) ||
@@ -99,11 +101,11 @@ contract FeeCollectModule is FeeModuleBase, FollowValidationModuleBase, ICollect
         uint256 pubId,
         bytes calldata data
     ) external virtual override onlyHub {
-        if (_dataByPublicationByProfile[profileId][pubId].followerOnly)
+        if (_dataByPublicationByProfile[profileId][pubId].followerOnly) //检查follow
             _checkFollowValidity(profileId, collector);
-        if (referrerProfileId == profileId) {
+        if (referrerProfileId == profileId) { //自己收集
             _processCollect(collector, profileId, pubId, data);
-        } else {
+        } else { //转发者收集
             _processCollectWithReferral(referrerProfileId, collector, profileId, pubId, data);
         }
     }
@@ -124,7 +126,7 @@ contract FeeCollectModule is FeeModuleBase, FollowValidationModuleBase, ICollect
     {
         return _dataByPublicationByProfile[profileId][pubId];
     }
-
+    ///创作者收集
     function _processCollect(
         address collector,
         uint256 profileId,
@@ -133,18 +135,20 @@ contract FeeCollectModule is FeeModuleBase, FollowValidationModuleBase, ICollect
     ) internal {
         uint256 amount = _dataByPublicationByProfile[profileId][pubId].amount;
         address currency = _dataByPublicationByProfile[profileId][pubId].currency;
+        //校验数据
         _validateDataIsExpected(data, currency, amount);
 
         (address treasury, uint16 treasuryFee) = _treasuryData();
         address recipient = _dataByPublicationByProfile[profileId][pubId].recipient;
         uint256 treasuryAmount = (amount * treasuryFee) / BPS_MAX;
         uint256 adjustedAmount = amount - treasuryAmount;
-
+        //收取费用给作品接收者
         IERC20(currency).safeTransferFrom(collector, recipient, adjustedAmount);
+        //将colloct费用给治理金库
         if (treasuryAmount > 0)
             IERC20(currency).safeTransferFrom(collector, treasury, treasuryAmount);
     }
-
+    //转发者收集
     function _processCollectWithReferral(
         uint256 referrerProfileId,
         address collector,
@@ -176,13 +180,13 @@ contract FeeCollectModule is FeeModuleBase, FollowValidationModuleBase, ICollect
             adjustedAmount = adjustedAmount - referralAmount;
 
             address referralRecipient = IERC721(HUB).ownerOf(referrerProfileId);
-
+            //转移收集费给转发者收账账户
             IERC20(currency).safeTransferFrom(collector, referralRecipient, referralAmount);
         }
         address recipient = _dataByPublicationByProfile[profileId][pubId].recipient;
-
+        //转给作品收款账户
         IERC20(currency).safeTransferFrom(collector, recipient, adjustedAmount);
-        if (treasuryAmount > 0)
+        if (treasuryAmount > 0) //转版税到金库
             IERC20(currency).safeTransferFrom(collector, treasury, treasuryAmount);
     }
 }
