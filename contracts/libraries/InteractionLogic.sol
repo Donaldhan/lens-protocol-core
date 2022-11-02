@@ -188,7 +188,7 @@ library InteractionLogic {
         address collectNFT = Clones.clone(collectNFTImpl);
 
         bytes4 firstBytes = bytes4(bytes(handle));
-
+        //NFT名称
         string memory collectNFTName = string(
             abi.encodePacked(handle, Constants.COLLECT_NFT_NAME_INFIX, pubId.toString())
         );
